@@ -3,6 +3,7 @@
 
 using namespace cocos2d;
 using namespace CocosDenshion;
+USING_NS_CC_EXT;
 
 CCScene* HelloWorld::scene()
 {
@@ -51,7 +52,7 @@ bool HelloWorld::init()
 
     // add a label shows "Hello World"
     // create and initialize a label
-    CCLabelTTF* pLabel = CCLabelTTF::create("Hello World", "Thonburi", 34);
+    pLabel = CCLabelTTF::create("Hello World", "Thonburi", 34);
 
     // ask director the window size
     CCSize size = CCDirector::sharedDirector()->getWinSize();
@@ -62,14 +63,40 @@ bool HelloWorld::init()
     // add the label as a child to this layer
     this->addChild(pLabel, 1);
 
-    // add "HelloWorld" splash screen"
-    CCSprite* pSprite = CCSprite::create("HelloWorld.png");
 
-    // position the sprite on the center of the screen
-    pSprite->setPosition( ccp(size.width/2, size.height/2) );
-
-    // add the sprite as a child to this layer
-    this->addChild(pSprite, 0);
+    // CCScrollView
+    scrollView = CCScrollView::create();
+    CCLayer *layer = CCLayer::create();
+    
+    CCSprite *sprite1 = CCSprite::create("HelloWorld.png");
+    CCSprite *sprite2 = CCSprite::create("HelloWorld.png");
+    
+    layer->setAnchorPoint(CCPointZero);
+    layer->setPosition(CCPointZero);
+    
+    // Menu
+    CCMenuItemSprite *menuItem1 = CCMenuItemSprite::create(sprite1, sprite1, this, menu_selector(HelloWorld::menu1Callback));
+    menuItem1->setPosition(ccpAdd(CCPointZero, ccp(size.width / 2, size.height / 2)));
+    menuItem1->setScale(0.4f);
+    CCMenuItemSprite *menuItem2 = CCMenuItemSprite::create(sprite2, sprite2, this, menu_selector(HelloWorld::menu2Callback));
+    menuItem2->setPosition(ccpAdd(ccp(480, 0), ccp(size.width / 2, size.height / 2)));
+    menuItem2->setScale(0.4f);
+    CCMenu *menu = CCMenu::create(menuItem1, menuItem2, NULL);
+    
+    menu->setPosition(CCPointZero);
+    layer->addChild(menu);
+    
+    scrollView->setPosition(CCPointZero);
+    scrollView->setContentOffset(CCPointZero);
+    layer->setContentSize(CCSizeMake(960, 320));
+    scrollView->setContentSize(CCSizeMake(480, 320));
+    scrollView->setContainer(layer);
+    
+    // 设置滚屏属性
+    scrollView->setDirection(CCScrollViewDirectionHorizontal);
+    scrollView->setDelegate(this);
+    
+    this->addChild(scrollView);
     
     return true;
 }
@@ -82,3 +109,83 @@ void HelloWorld::menuCloseCallback(CCObject* pSender)
     exit(0);
 #endif
 }
+
+void HelloWorld::scrollViewDidScroll(cocos2d::extension::CCScrollView *view)
+{
+}
+
+void HelloWorld::scrollViewDidZoom(cocos2d::extension::CCScrollView *view)
+{
+}
+
+void HelloWorld::onEnter()
+{
+    CCLayer::onEnter();
+    CCDirector::sharedDirector()->getTouchDispatcher()->addTargetedDelegate(this, 1, true);
+}
+
+void HelloWorld::onExit()
+{
+    CCDirector::sharedDirector()->getTouchDispatcher()->removeDelegate(this);
+    CCLayer::onExit();
+}
+
+bool HelloWorld::ccTouchBegan(cocos2d::CCTouch *pTouch, cocos2d::CCEvent *pEvent)
+{
+    return true;
+}
+
+void HelloWorld::ccTouchMoved(cocos2d::CCTouch *pTouch, cocos2d::CCEvent *pEvent)
+{
+    CCLOG("move");
+}
+
+void HelloWorld::ccTouchEnded(cocos2d::CCTouch *pTouch, cocos2d::CCEvent *pEvent)
+{
+    adjustScrollView();
+}
+
+void HelloWorld::ccTouchCancelled(cocos2d::CCTouch *pTouch, cocos2d::CCEvent *pEvent)
+{
+    adjustScrollView();
+}
+
+void HelloWorld::adjustScrollView()
+{
+    // 关闭CCScrollView中的自调整
+    scrollView->unscheduleAllSelectors();
+    
+    int x = scrollView->getContentOffset().x;
+    int offset = (int) x % 480;
+    // 调整位置
+    CCPoint adjustPos;
+    // 调整动画时间
+    float adjustAnimDelay;
+    
+    if (offset < -240) {
+        // 计算下一页位置，时间
+        adjustPos = ccpSub(scrollView->getContentOffset(), ccp(480 + offset, 0));
+        adjustAnimDelay = (float) (480 + offset) / ADJUST_ANIM_VELOCITY;
+    }
+    else {
+        // 计算当前页位置，时间
+        adjustPos = ccpSub(scrollView->getContentOffset(), ccp(offset, 0));
+        // 这里要取绝对值，否则在第一页往左翻动的时，保证adjustAnimDelay为正数
+        adjustAnimDelay = (float) abs(offset) / ADJUST_ANIM_VELOCITY;
+    }
+    
+    // 调整位置
+    scrollView->setContentOffsetInDuration(adjustPos, adjustAnimDelay);
+}
+
+void HelloWorld::menu1Callback(cocos2d::CCNode *pSender)
+{
+    CCLOG("menu1Callback");
+}
+
+void HelloWorld::menu2Callback(cocos2d::CCNode *pSender)
+{
+    CCLOG("menu2Callback");
+}
+
+

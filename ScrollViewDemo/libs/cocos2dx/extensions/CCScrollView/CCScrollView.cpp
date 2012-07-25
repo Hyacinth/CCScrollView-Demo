@@ -431,7 +431,7 @@ void CCScrollView::deaccelerateScrolling(float dt)
 
 void CCScrollView::stoppedAnimatedScroll(CCNode * node)
 {
-    this->unschedule(schedule_selector(CCScrollView::performedAnimatedScroll));
+        
 }
 
 void CCScrollView::performedAnimatedScroll(float dt)
